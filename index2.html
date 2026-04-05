@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💜Game</title>
+
+<style>
+body {
+  font-family: 'Arial';
+  text-align: center;
+  background: linear-gradient(to right, #e0c3fc, #f5e6ff);
+}
+
+/* ปุ่ม */
+button {
+  margin: 8px;
+  padding: 12px;
+  border-radius: 15px;
+  border: none;
+  font-size: 16px;
+  background: #d6b3ff;
+  color: #4b0082;
+  box-shadow: 0 5px #b388ff;
+  transition: all 0.2s ease;
+}
+button:active {
+  transform: translateY(4px);
+}
+
+/* 💜 ปุ่มที่เลือก (ใช้ร่วมกัน) */
+.selected-cat, .selected-lang {
+  outline: 6px solid #9333ea;
+  background: #f5e6ff;
+  transform: scale(1.1);
+  box-shadow: 0 0 15px #c084fc, 0 0 25px #e9d5ff;
+  position: relative;
+  animation: glow 0.8s infinite;
+}
+
+.selected-cat::after,
+.selected-lang::after {
+  content: "✔";
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #22c55e;
+  color: white;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 10px #c084fc; }
+  50% { box-shadow: 0 0 25px #a855f7; }
+  100% { box-shadow: 0 0 10px #c084fc; }
+}
+
+/* ถูกผิด */
+.selected { outline: 6px solid #9333ea; }
+.correct { background: #dcfce7; outline: 4px solid #22c55e; }
+.wrong { background: #fee2e2; outline: 4px solid #ef4444; }
+
+/* card */
+.card {
+  background: white;
+  width: 320px;
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 25px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.screen { display:none; }
+.active { display:block; }
+
+.emoji { font-size: 70px; }
+
+.topbar {
+  display:flex;
+  justify-content: space-between;
+}
+
+/* 🐰 */
+#bunny {
+  font-size: 40px;
+  display: none;
+}
+.jump {
+  display: block;
+  animation: jump 0.6s;
+}
+@keyframes jump {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-30px); }
+  100% { transform: translateY(0); }
+}
+
+/* 🎉 confetti */
+#confetti {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 999;
+}
+</style>
+</head>
+
+<body>
+
+<!-- START -->
+<div id="start" class="screen active">
+  <h1>💜</h1>
+  <input id="name" placeholder="ชื่อหนู..." /><br>
+
+  <h3>โหมด</h3>
+<button class="mode-btn" onclick="setMode(this,'word')">คำศัพท์</button>
+<button class="mode-btn" onclick="setMode(this,'math')">คณิต</button>
+
+  <h3>ภาษา</h3>
+  <button class="lang-btn" onclick="setLang(this,'en')">English</button>
+  <button class="lang-btn" onclick="setLang(this,'zh')">Chinese</button>
+
+  <h3>หมวด</h3>
+  <button class="cat-btn" onclick="setCat(this,'animal')">สัตว์</button>
+  <button class="cat-btn" onclick="setCat(this,'food')">อาหาร</button>
+  <button class="cat-btn" onclick="setCat(this,'transport')">ยานพาหนะ</button>
+<button class="cat-btn" onclick="setCat(this,'color')">สี</button>
+<button class="cat-btn" onclick="setCat(this,'number')">ตัวเลข</button>
+<button class="cat-btn" onclick="setCat(this,'school')">โรงเรียน</button>
+
+  <br>
+  <button onclick="startGame()">🎮 เริ่ม</button>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+  <div class="topbar">
+    <h3>เลเวล: <span id="level">1/20</span></h3>
+    <span id="player"></span>
+    <button onclick="exitGame()">❌ ออก</button>
+  </div>
+
+  <div class="card">
+    <div class="emoji" id="emoji"></div>
+    <div id="choices"></div>
+    <div id="bunny">🐰</div>
+    <p id="result"></p>
+    <p>⭐ <span id="score">0</span></p>
+    <p>❤️ <span id="life">3</span></p>
+  </div>
+</div>
+
+<!-- OVER -->
+<div id="over" class="screen">
+  <h1>💀 Game Over!</h1>
+  <h2 id="final"></h2>
+  <h3>🏆 Rank</h3>
+  <div id="rank"></div>
+  <button onclick="restart()">เล่นใหม่</button>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<script>
+  let lang="en",cat="animal",mode="word";
+  let score=0,life=3,name="",level=1;
+  
+  let words={
+
+animal:[
+{emoji:"🐶",en:"dog",th:"สุนัข",zh:"狗",pinyin:"gǒu"},
+{emoji:"🐱",en:"cat",th:"แมว",zh:"猫",pinyin:"māo"},
+{emoji:"🐭",en:"mouse",th:"หนู",zh:"老鼠",pinyin:"lǎoshǔ"},
+{emoji:"🐰",en:"rabbit",th:"กระต่าย",zh:"兔子",pinyin:"tùzi"},
+{emoji:"🦁",en:"lion",th:"สิงโต",zh:"狮子",pinyin:"shīzi"},
+{emoji:"🐯",en:"tiger",th:"เสือ",zh:"老虎",pinyin:"lǎohǔ"},
+{emoji:"🐘",en:"elephant",th:"ช้าง",zh:"大象",pinyin:"dàxiàng"},
+{emoji:"🐵",en:"monkey",th:"ลิง",zh:"猴子",pinyin:"hóuzi"}
+],
+
+food:[
+{emoji:"🍎",en:"apple",th:"แอปเปิ้ล",zh:"苹果",pinyin:"píngguǒ"},
+{emoji:"🍌",en:"banana",th:"กล้วย",zh:"香蕉",pinyin:"xiāngjiāo"},
+{emoji:"🍇",en:"grape",th:"องุ่น",zh:"葡萄",pinyin:"pútáo"},
+{emoji:"🍓",en:"strawberry",th:"สตรอว์เบอร์รี่",zh:"草莓",pinyin:"cǎoméi"},
+{emoji:"🍕",en:"pizza",th:"พิซซ่า",zh:"披萨",pinyin:"pīsà"},
+{emoji:"🍔",en:"burger",th:"เบอร์เกอร์",zh:"汉堡",pinyin:"hànbǎo"},
+{emoji:"🍚",en:"rice",th:"ข้าว",zh:"米饭",pinyin:"mǐfàn"}
+],
+
+transport:[
+{emoji:"🚗",en:"car",th:"รถยนต์",zh:"汽车",pinyin:"qìchē"},
+{emoji:"🚌",en:"bus",th:"รถบัส",zh:"公交车",pinyin:"gōngjiāochē"},
+{emoji:"🚲",en:"bike",th:"จักรยาน",zh:"自行车",pinyin:"zìxíngchē"},
+{emoji:"🚆",en:"train",th:"รถไฟ",zh:"火车",pinyin:"huǒchē"},
+{emoji:"✈️",en:"airplane",th:"เครื่องบิน",zh:"飞机",pinyin:"fēijī"}
+],
+
+color:[
+{emoji:"🟥",en:"red",th:"สีแดง",zh:"红色",pinyin:"hóngsè"},
+{emoji:"🟦",en:"blue",th:"สีน้ำเงิน",zh:"蓝色",pinyin:"lánsè"},
+{emoji:"🟩",en:"green",th:"สีเขียว",zh:"绿色",pinyin:"lǜsè"},
+{emoji:"🟨",en:"yellow",th:"สีเหลือง",zh:"黄色",pinyin:"huángsè"},
+{emoji:"⬛",en:"black",th:"สีดำ",zh:"黑色",pinyin:"hēisè"},
+{emoji:"⬜",en:"white",th:"สีขาว",zh:"白色",pinyin:"báisè"}
+],
+
+number:[
+{emoji:"1️⃣",en:"one",th:"หนึ่ง",zh:"一",pinyin:"yī"},
+{emoji:"2️⃣",en:"two",th:"สอง",zh:"二",pinyin:"èr"},
+{emoji:"3️⃣",en:"three",th:"สาม",zh:"三",pinyin:"sān"},
+{emoji:"4️⃣",en:"four",th:"สี่",zh:"四",pinyin:"sì"},
+{emoji:"5️⃣",en:"five",th:"ห้า",zh:"五",pinyin:"wǔ"},
+{emoji:"6️⃣",en:"six",th:"หก",zh:"六",pinyin:"liù"},
+{emoji:"7️⃣",en:"seven",th:"เจ็ด",zh:"七",pinyin:"qī"},
+{emoji:"8️⃣",en:"eight",th:"แปด",zh:"八",pinyin:"bā"},
+{emoji:"9️⃣",en:"nine",th:"เก้า",zh:"九",pinyin:"jiǔ"},
+{emoji:"🔟",en:"ten",th:"สิบ",zh:"十",pinyin:"shí"}
+],
+
+school:[
+{emoji:"📘",en:"book",th:"หนังสือ",zh:"书",pinyin:"shū"},
+{emoji:"✏️",en:"pencil",th:"ดินสอ",zh:"铅笔",pinyin:"qiānbǐ"},
+{emoji:"🖊️",en:"pen",th:"ปากกา",zh:"笔",pinyin:"bǐ"},
+{emoji:"🎒",en:"bag",th:"กระเป๋า",zh:"书包",pinyin:"shūbāo"},
+{emoji:"📏",en:"ruler",th:"ไม้บรรทัด",zh:"尺子",pinyin:"chǐzi"},
+{emoji:"🧮",en:"abacus",th:"ลูกคิด",zh:"算盘",pinyin:"suànpan"}
+]
+
+};
+  
+  /* 🔊 เสียง */
+  function speak(obj){
+  speechSynthesis.cancel(); // 💥 หยุดเสียงก่อนหน้า
+
+  if(lang === "en"){
+    let u = new SpeechSynthesisUtterance(obj.en);
+    u.lang = "en-US";
+    speechSynthesis.speak(u);
+
+  } else if(lang === "zh"){
+    let u = new SpeechSynthesisUtterance(obj.zh);
+    u.lang = "zh-CN";
+    speechSynthesis.speak(u);
+  }
+}
+function repeatSpeak(){
+  if(cur){
+    speak(cur);
+  }
+}
+  
+  /* 💜 เลือกภาษา */
+  function setLang(btn,l){
+   lang=l;
+   document.querySelectorAll(".lang-btn")
+    .forEach(b=>b.classList.remove("selected-lang"));
+   btn.classList.add("selected-lang");
+  }
+  
+  /* 💜 เลือกหมวด */
+  function setCat(btn,c){
+   cat=c;
+   document.querySelectorAll(".cat-btn")
+    .forEach(b=>b.classList.remove("selected-cat"));
+   btn.classList.add("selected-cat");
+  }
+  
+  /* 🧠 เพิ่มโหมด */
+  function setMode(btn,m){
+   mode=m;
+   document.querySelectorAll(".mode-btn")
+    .forEach(b=>b.classList.remove("selected-cat"));
+   btn.classList.add("selected-cat");
+  }
+  
+  /* 화면 */
+  function show(s){
+   document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+   document.getElementById(s).classList.add("active");
+  }
+  
+  function startGame(){
+   name=document.getElementById("name").value || localStorage.getItem("name") || "เด็กน้อย";
+   localStorage.setItem("name",name);
+   document.getElementById("player").innerText=name;
+   show("game");
+   nextQ();
+  }
+  
+  let cur={},answer;
+  
+  /* 🎯 สร้างคำถาม */
+  function nextQ(){
+ document.getElementById("result").innerText="";
+ document.getElementById("level").innerText=level+"/20";
+
+ if(mode==="word"){
+   let list=words[cat];
+   cur=list[Math.floor(Math.random()*list.length)];
+   answer=cur[lang];
+
+   // 💜 แสดงคำ + ไทย + พินอิน
+   document.getElementById("emoji").innerHTML = `
+     <div style="font-size:60px">${cur.emoji}</div>
+     <div>${cur.th}</div>
+     ${lang==="zh" ? `<div style="color:#9333ea">${cur.pinyin}</div>` : ""}
+   `;
+
+   speak(cur); // ✅ เรียก object
+
+   let ops=list.map(w=>w[lang]).sort(()=>Math.random()-0.5);
+   let html="";
+   ops.forEach(o=>{
+     html+=`<button class="choice" onclick="check(this,'${o}')">${o}</button>`;
+   });
+   document.getElementById("choices").innerHTML=html;
+
+ }else{
+   // ➕➖ คณิต
+   let a=Math.floor(Math.random()*10);
+   let b=Math.floor(Math.random()*10);
+   let op=Math.random()>0.5?"+":"-";
+
+   answer= op==="+" ? a+b : a-b;
+
+   document.getElementById("emoji").innerText=a+" "+op+" "+b+" = ?";
+
+   let ops=[answer,answer+1,answer-1].sort(()=>Math.random()-0.5);
+   let html="";
+   ops.forEach(o=>{
+     html+=`<button class="choice" onclick="check(this,'${o}')">${o}</button>`;
+   });
+   document.getElementById("choices").innerHTML=html;
+ }
+}
+  
+  /* 🎯 ตรวจคำตอบ */
+  function check(btn,ans){
+   let res=document.getElementById("result");
+   let all=document.querySelectorAll(".choice");
+   let bunny=document.getElementById("bunny");
+  
+   all.forEach(b=>b.classList.remove("selected","correct","wrong"));
+   btn.classList.add("selected");
+  
+   if(ans==answer){
+    score++;
+    level++; // 💜 เพิ่มเลเวล
+    res.innerHTML="✅ เก่งมาก! ⭐";
+    btn.classList.add("correct");
+  
+    confetti();
+    playDing();
+    bunny.classList.add("jump");
+    setTimeout(()=>bunny.classList.remove("jump"),600);
+  
+   }else{
+    life--;
+    res.innerHTML="❌ ลองอีกครั้ง";
+    btn.classList.add("wrong");
+  
+    all.forEach(b=>{
+      if(b.innerText==answer){
+        b.classList.add("correct");
+      }
+    });
+   }
+  
+   document.getElementById("score").innerText=score;
+   document.getElementById("life").innerText=life;
+  
+   if(level>20 || life<=0){
+    saveRank();
+    showOver();
+   }else{
+    setTimeout(nextQ,1200);
+   }
+  }
+  
+  function exitGame(){
+   if(confirm("ออกจากเกมไหม?")){
+    location.reload();
+   }
+  }
+  
+  /* 🏆 อันดับ */
+  function saveRank(){
+   let ranks=JSON.parse(localStorage.getItem("rank")||"[]");
+   ranks.push({name,score});
+   ranks.sort((a,b)=>b.score-a.score);
+   ranks=ranks.slice(0,5);
+   localStorage.setItem("rank",JSON.stringify(ranks));
+  }
+  
+  function showOver(){
+   document.getElementById("final").innerText=name+" ได้ "+score+" คะแนน (เลเวล "+(level-1)+")";
+   let ranks=JSON.parse(localStorage.getItem("rank")||"[]");
+   let html="";
+   ranks.forEach(r=>html+=`<p>${r.name} - ${r.score}</p>`);
+   document.getElementById("rank").innerHTML=html;
+   show("over");
+  }
+  
+  function restart(){ location.reload(); }
+  
+  /* 🔊 เสียง */
+  function playDing(){
+   let audio=new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
+   audio.play();
+  }
+  
+  /* 🎉 confetti */
+  window.onload=function(){
+   const canvas=document.getElementById("confetti");
+   const ctx=canvas.getContext("2d");
+  
+   canvas.width=window.innerWidth;
+   canvas.height=window.innerHeight;
+  
+   window.confetti=function(){
+    for(let i=0;i<50;i++){
+     ctx.fillStyle="hsl("+Math.random()*360+",100%,70%)";
+     ctx.fillRect(Math.random()*canvas.width,Math.random()*canvas.height,5,5);
+    }
+    setTimeout(()=>ctx.clearRect(0,0,canvas.width,canvas.height),500);
+   };
+  };
+  </script>
+
+</body>
+</html>
