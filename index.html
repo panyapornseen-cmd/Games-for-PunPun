@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💜Game</title>
+<title>💜Game💜</title>
 
 <style>
 body {
@@ -116,34 +116,39 @@ button:active {
 <!-- START -->
 <div id="start" class="screen active">
   <h1>💜</h1>
-  <input id="name" placeholder="ชื่อหนู..." /><br>
+  <input id="name" placeholder="Enter your name..." /><br>
 
-  <h3>โหมด</h3>
-<button class="mode-btn" onclick="setMode(this,'word')">คำศัพท์</button>
-<button class="mode-btn" onclick="setMode(this,'math')">คณิต</button>
+  <h3>Mode</h3>
+<button class="mode-btn" onclick="setMode(this,'word')">Words</button>
+<button class="mode-btn" onclick="setMode(this,'math')">Math</button>
 
-  <h3>ภาษา</h3>
+  <h3>language</h3>
   <button class="lang-btn" onclick="setLang(this,'en')">English</button>
   <button class="lang-btn" onclick="setLang(this,'zh')">Chinese</button>
 
-  <h3>หมวด</h3>
-  <button class="cat-btn" onclick="setCat(this,'animal')">สัตว์</button>
-  <button class="cat-btn" onclick="setCat(this,'food')">อาหาร</button>
-  <button class="cat-btn" onclick="setCat(this,'transport')">ยานพาหนะ</button>
-<button class="cat-btn" onclick="setCat(this,'color')">สี</button>
-<button class="cat-btn" onclick="setCat(this,'number')">ตัวเลข</button>
-<button class="cat-btn" onclick="setCat(this,'school')">โรงเรียน</button>
+  <h3>Category</h3>
+  <button class="cat-btn" onclick="setCat(this,'animal')">🐶 Animals-สัตว์ 🐾</button>
+
+<button class="cat-btn" onclick="setCat(this,'food')">🍔 Foods-อาหาร 🍎</button>
+
+<button class="cat-btn" onclick="setCat(this,'transport')">🚗 Transports-ยานพาหนะ 🚆</button>
+
+<button class="cat-btn" onclick="setCat(this,'color')">🎨 Colors-สี 🌈</button>
+
+<button class="cat-btn" onclick="setCat(this,'number')">🔢 Numbers-เลข 🔟</button>
+
+<button class="cat-btn" onclick="setCat(this,'school')">🏫 Schools-โรงเรียน ✏️</button>
 
   <br>
-  <button onclick="startGame()">🎮 เริ่ม</button>
+  <button onclick="startGame()">🎮START🎮</button>
 </div>
 
 <!-- GAME -->
 <div id="game" class="screen">
   <div class="topbar">
-    <h3>เลเวล: <span id="level">1/20</span></h3>
+    <h3>level: <span id="level">1/20</span></h3>
     <span id="player"></span>
-    <button onclick="exitGame()">❌ ออก</button>
+    <button onclick="exitGame()">❌ออก❌</button>
   </div>
 
   <div class="card">
@@ -151,8 +156,8 @@ button:active {
     <div id="choices"></div>
     <div id="bunny">🐰</div>
     <p id="result"></p>
-    <p>⭐ <span id="score">0</span></p>
-    <p>❤️ <span id="life">3</span></p>
+    <p>⭐YOUR SCORE⭐<span id="score">0</span></p>
+    <p>❤️YOUR LIFE❤️ <span id="life">3</span></p>
   </div>
 </div>
 
@@ -162,7 +167,7 @@ button:active {
   <h2 id="final"></h2>
   <h3>🏆 Rank</h3>
   <div id="rank"></div>
-  <button onclick="restart()">เล่นใหม่</button>
+  <button onclick="restart()">🎮RESTART🎮</button>
 </div>
 
 <canvas id="confetti"></canvas>
@@ -287,7 +292,7 @@ function repeatSpeak(){
   }
   
   function startGame(){
-   name=document.getElementById("name").value || localStorage.getItem("name") || "เด็กน้อย";
+   name=document.getElementById("name").value || localStorage.getItem("name") || "User";
    localStorage.setItem("name",name);
    document.getElementById("player").innerText=name;
    show("game");
@@ -353,7 +358,7 @@ function repeatSpeak(){
    if(ans==answer){
     score++;
     level++; // 💜 เพิ่มเลเวล
-    res.innerHTML="✅ เก่งมาก! ⭐";
+    res.innerHTML="✅Great! ⭐";
     btn.classList.add("correct");
   
     confetti();
@@ -363,7 +368,7 @@ function repeatSpeak(){
   
    }else{
     life--;
-    res.innerHTML="❌ ลองอีกครั้ง";
+    res.innerHTML="❌Try again❌";
     btn.classList.add("wrong");
   
     all.forEach(b=>{
@@ -400,7 +405,7 @@ function repeatSpeak(){
   }
   
   function showOver(){
-   document.getElementById("final").innerText=name+" ได้ "+score+" คะแนน (เลเวล "+(level-1)+")";
+   document.getElementById("final").innerText=name+" ได้ "+score+" คะแนน (level "+(level-1)+")";
    let ranks=JSON.parse(localStorage.getItem("rank")||"[]");
    let html="";
    ranks.forEach(r=>html+=`<p>${r.name} - ${r.score}</p>`);
